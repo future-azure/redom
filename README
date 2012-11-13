@@ -1,0 +1,144 @@
+DJS Tutorial
+
+  DJS is a distributed object library for Server-WebBrowser communication. This tutorial shows how to create a web application using DJS.
+
+===============
+Getting started
+===============
+
+- Choosing a web server
+
+  DJS receives requests from a web server and creates responses which will be sent to browsers. First of all you should choose a web server to serve the browsers' requests. Any web server that can response HTTP or WebSocket requests can be used. For example, WEBrick, Sinatra and so on. In this tutorial, we will be using Sinatra.
+  An HTTP DJS request is using 'post' method, so you may specify the route to match a DJS request in Sinatra like follows. The request content should be passed to 'DJS::response(req)' and the return value (a string) would be the response which should be returned to browser.
+#
+  require 'sinatra'
+  post '/djs' do
+    DJS.response request.body.read
+  end
+#
+
+- Creating a DJS connection class
+
+  A DJS connection class is where you write the scripts to manipulate the browser-side objects from server. The DJS connection class must be subclass of 'DJS::DJSConnection'. An instance of DJS connection class will be created when the connection between browser and DJS server is established. There are four methods in 'DJS::DJSConnection' that can be overridden to tell DJS what to do.
+
+  on_open()       - Called when the connection is established.
+  on_error(err)   - Called when an browser-side error occurs.
+  on_message(msg) - Called when an message is received from browser.(not implemented)
+  on_close()      - Called when the connection is shutdown.(not implemented)
+
+  Here is an example:
+#
+  class MyConnection < DJS::DJSConnection
+    def on_open
+      window.alert "Hello world!"
+    end
+    def on_error(error)
+      p error
+    end
+  end
+#
+
+- Starting DJS server
+
+  After a DJS connection class is defined, you can start DJS server using 'DJS::start(klass)' method. Your DJS connection class must be passed as the argument. Then you can start your web server to make it work.
+#
+  DJS.start(MyConnection)
+#
+
+- Adding DJS library to HTML
+
+  Add DJS JavaScript library 'djs.js' in your HTML. And call 'djs_start_ajax(DJSServerURL)' to connect to a DJS server.
+#
+  <script type="text/javascript" src="../../lib/djs.js"></script>
+  <script type="text/javascript">
+    window.onload = function() {
+      djs_start_ajax("http://localhost:4567/djs");
+    }
+  </script>
+#
+
+- Stopping DJS server
+
+  Use 'DJS.stop' to stop a DJS server.
+#
+  DJS.stop
+#
+
+========
+API Docs
+========
+
+* Module: DJS
+
+  - DJS.start(klass, opts = {})
+    
+    Start DJS server.
+
+    Parameters:
+      klass (Class) - A class that extends DJS::Connection
+      opts (Hash) - Options. Default values are as below:
+        :buff_size => 200 - Messages stored before synchronization with browser.
+
+  - DJS.stop
+
+    Stop DJS server.
+
+  - DJS.connections
+
+    Return all DJS connection instances that the DJS server is holding currently.
+
+    Returns:
+      (DJS::DJSConnections) - An DJS::DJSConnections instance that contains all DJS::DJSConnection instances the DJS server is holding currently.
+
+    Examples:
+      DJS.connections.do_something
+  
+
+* Class: DJS::DJSConnection
+
+  - sync
+
+    Synchronize with browser immediately.
+
+  - window
+
+    A reference for browser-side object 'window'.
+
+   Returns:
+     (DJS::DJSProxyObject) - A DJS::DJSProxyObject that references to browser-side object 'window'.
+
+   Examples:
+     window.alert "Hello world."
+
+  - register_function(name)
+
+    Register a function that can be invoked at browser-side without communicating with DJS server.
+
+    Parameters:
+      name (Symbol) - Name of the method to be registered.
+
+* Class: DJS:DJSProxyObject
+
+  - sync
+
+    Synchronize with browser immediately and return the true value of the referenced object.
+
+    Returns:
+      (Object) - Primitive type if the referenced object is primitive, otherwise the DJS::DJSProxyObject itself.
+
+    Examples:
+      value = document.getElementById("text").value.sync
+
+=====
+Hints
+=====
+
+- Define a event handler as 'object.event_name = :event_handler_name'
+  Examples:
+    def button_click_handler(event)
+      button = event.srcElement
+    end
+    document.getElementById("button").onclick = :button_click_handler
+
+
+
