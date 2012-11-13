@@ -19,7 +19,6 @@ module DJS
   INFO_ORG  = 'org'
   INFO_MLT  = 'mlt'
 
-  OPT_SERVER    = :server
   OPT_HOST      = :host
   OPT_PORT      = :port
   OPT_DEBUG     = :debug
@@ -29,14 +28,11 @@ module DJS
   TERMINAL = '\x00'
 
   # Proxy types
-  # HANDSHAKE               = 0
   METHOD_INVOCATION       = 1
   PROPERTY_ASSIGNMENT     = 2
   EVENTHANDLER_DEFINITION = 3
   EVENTHANDLER_INVOCATION = 4
   PROXY_RESPONSE          = 5
-  # ON_HANDSHAKE            = 6
-  # ON_RPC                  = 7
 
   # Object type
   TYPE_PRIMITIVE = 1
@@ -223,12 +219,6 @@ module DJS
         return @origin.send(name, *args, &block)
       end
 
-#      if @conn.registered_function.include?(name)
-#        proxy = ProxyObject.new(@conn, {:type => "window", :content => "FUNCS[#{name}]", :args => args}, caller[0])
-#        @conn.add_proxy proxy
-#        return proxy
-#      end
-
       name = name.to_s
       type = METHOD_INVOCATION
 
@@ -369,8 +359,8 @@ module DJS
       @fibers = Hash.new
     end
 
-    attr_reader :registered_function, :cid, :ws
-    
+    attr_reader :cid, :ws
+
     def close
       @ws.close_websocket
     end
@@ -482,31 +472,6 @@ module DJS
 
       on_error(error) if error
     end
-    
-    def merge_info(infos, info)
-      if last = infos[-1]
-        if last[INFO_RCVR] == info[INFO_RCVR] &&
-          last[INFO_NAME] == info[INFO_NAME] &&
-          last[INFO_TYPE] == info[INFO_TYPE]
-          if last[INFO_MLT]
-            last[INFO_ARGS] << info[INFO_ARGS]
-          else
-            last[INFO_MLT] = true
-            last[INFO_ARGS] = [last[INFO_ARGS], info[INFO_ARGS]]
-          end
-        end
-      end
-    end
-
-    def on_callback(method_name, event_id)
-      method = self.method(method_name)
-      if method.arity == 1
-        event = EventProxyObject.new(self, event_id)
-        method.call(event)
-      else
-        method.call
-      end
-    end
 
     # Default Event handler
     def on_open; end
@@ -530,37 +495,6 @@ module DJS
     def djs_eval(src)
       window.eval(Opal.parse(src))
     end
-
-    # def register_function(name)
-      # sync
-      # method = self.method(name)
-      # @register = Array.new
-      # if method.arity < 0
-        # raise "Optional arguments is not supported!"
-      # end
-      # arguments = []
-      # method.arity.times { |i|
-        # arguments << Argument.new(self, "ext[#{i}]")
-      # }
-      # method.call(*arguments)
-# p "%%%%%%%%%%%%%%%%%%%%%%%"
-# p @register
-      # @register = nil
-      # @registered_function << name
-    # end
-
-    # def register_function(name, src)
-      # if name && !name.empty? && src && !src.empty?
-        # js_src = Opal.parse <<-END
-          # def #{name}
-            # #{src}
-          # end
-        # END
-        # js_eval <<-END
-          # djs.funcs['#{name}'] = window.#{name} = #{js_src};
-        # END
-      # end
-    # end
 
     def method_missing(name, *args, &blk)
       window.method_missing(name, *args)
@@ -648,4 +582,5 @@ module DJS
       "t#{@thread.__id__}"
     end
   end
+  # Worker -end-
 end
