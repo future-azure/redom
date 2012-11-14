@@ -18,7 +18,7 @@ class ChatConnection < DJS::Connection
   end
 
   def on_open
-    j("#status")[0].innerHTML = j("#first")[0].innerHTML.chomp
+    j("#status")[0].innerHTML = ''
     j("#btn")[0].onclick = method(:receive_chat_msg)
   end
 
