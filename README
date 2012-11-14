@@ -6,17 +6,6 @@ DJS Tutorial
 Getting started
 ===============
 
-- Choosing a web server
-
-  DJS receives requests from a web server and creates responses which will be sent to browsers. First of all you should choose a web server to serve the browsers' requests. Any web server that can response HTTP or WebSocket requests can be used. For example, WEBrick, Sinatra and so on. In this tutorial, we will be using Sinatra.
-  An HTTP DJS request is using 'post' method, so you may specify the route to match a DJS request in Sinatra like follows. The request content should be passed to 'DJS::response(req)' and the return value (a string) would be the response which should be returned to browser.
-#
-  require 'sinatra'
-  post '/djs' do
-    DJS.response request.body.read
-  end
-#
-
 - Creating a DJS connection class
 
   A DJS connection class is where you write the scripts to manipulate the browser-side objects from server. The DJS connection class must be subclass of 'DJS::DJSConnection'. An instance of DJS connection class will be created when the connection between browser and DJS server is established. There are four methods in 'DJS::DJSConnection' that can be overridden to tell DJS what to do.
@@ -28,7 +17,7 @@ Getting started
 
   Here is an example:
 #
-  class MyConnection < DJS::DJSConnection
+  class MyConnection < DJS::Connection
     def on_open
       window.alert "Hello world!"
     end
@@ -40,19 +29,19 @@ Getting started
 
 - Starting DJS server
 
-  After a DJS connection class is defined, you can start DJS server using 'DJS::start(klass)' method. Your DJS connection class must be passed as the argument. Then you can start your web server to make it work.
+  After a DJS connection class is defined, you can start DJS server using 'DJS::start(klass)' method. Your DJS connection class must be passed as the argument.
 #
-  DJS.start(MyConnection)
+  DJS.start(MyConnection, {:host => 127.0.0.1, :port => 8080})
 #
 
 - Adding DJS library to HTML
 
-  Add DJS JavaScript library 'djs.js' in your HTML. And call 'djs_start_ajax(DJSServerURL)' to connect to a DJS server.
+  Add DJS JavaScript library 'djs.js' in your HTML. And call 'djs.start(host)' to connect to a DJS server.
 #
-  <script type="text/javascript" src="../../lib/djs.js"></script>
+  <script type="text/javascript" src="djs.js"></script>
   <script type="text/javascript">
     window.onload = function() {
-      djs_start_ajax("http://localhost:4567/djs");
+      djs.start("ws://127.0.0.1:8080");
     }
   </script>
 #
@@ -88,13 +77,13 @@ API Docs
     Return all DJS connection instances that the DJS server is holding currently.
 
     Returns:
-      (DJS::DJSConnections) - An DJS::DJSConnections instance that contains all DJS::DJSConnection instances the DJS server is holding currently.
+      (DJS::Connections) - An DJS::Connections instance that contains all DJS::Connection instances the DJS server is holding currently.
 
     Examples:
       DJS.connections.do_something
   
 
-* Class: DJS::DJSConnection
+* Class: DJS::Connection
 
   - sync
 
@@ -105,26 +94,19 @@ API Docs
     A reference for browser-side object 'window'.
 
    Returns:
-     (DJS::DJSProxyObject) - A DJS::DJSProxyObject that references to browser-side object 'window'.
+     (DJS::ProxyObject) - A DJS::ProxyObject that references to browser-side object 'window'.
 
    Examples:
      window.alert "Hello world."
 
-  - register_function(name)
-
-    Register a function that can be invoked at browser-side without communicating with DJS server.
-
-    Parameters:
-      name (Symbol) - Name of the method to be registered.
-
-* Class: DJS:DJSProxyObject
+* Class: DJS:ProxyObject
 
   - sync
 
     Synchronize with browser immediately and return the true value of the referenced object.
 
     Returns:
-      (Object) - Primitive type if the referenced object is primitive, otherwise the DJS::DJSProxyObject itself.
+      (Object) - Primitive type if the referenced object is primitive, otherwise the DJS::ProxyObject itself.
 
     Examples:
       value = document.getElementById("text").value.sync

@@ -1,8 +1,10 @@
-require 'thread'
-require 'fiber'
+$:.unshift(File.dirname(__FILE__) + '/../lib')
+
 require 'em-websocket'
+require 'fiber'
 require 'json'
 require 'opal'
+require 'thread'
 
 module DJS
   INFO_RCVR = 'rcvr'
@@ -17,7 +19,6 @@ module DJS
   INFO_FID  = 'fid'
   INFO_PRX  = 'prx'
   INFO_ORG  = 'org'
-  INFO_MLT  = 'mlt'
 
   OPT_HOST      = :host
   OPT_PORT      = :port
@@ -163,10 +164,6 @@ module DJS
       end
       ConnectionFilter.new(Hash.new)
     end
-    
-    def find(count = 1, &blk)
-      
-    end
 
     def method_missing(name, *args, &block)
       @connections.values.each { |conn|
@@ -306,25 +303,6 @@ module DJS
   end
   # ProxyObject -end-
 
-  class EventProxyObject < ProxyObject
-    def initialize(conn, event_id)
-      super(conn, {INFO_RCVR => "EVENTS[#{event_id}]"})
-    end
-  end
-
-  class RpcProxyObject < ProxyObject
-    def initialize(conn)
-      super(conn, {INFO_RCVR => 'rpc', INFO_NAME => conn.__id__})
-    end
-  end
-
-  class Argument < ProxyObject
-    def initialize(conn, name)
-      @name = name
-      super(conn, {INFO_RCVR => self})
-    end
-  end
-
   class ClassProxyObject < ProxyObject
     def initialize(conn, name, caller)
       @name = name[1, name.length]
@@ -448,9 +426,18 @@ module DJS
           when TYPE_UNDEFINED
             proxy = stack[info[INFO_OID]]
             rcvr = stack[proxy.info[INFO_RCVR]]
-            if rcvr.respond_to?(proxy.info[INFO_NAME])
-              result = rcvr.send(proxy.info[INFO_NAME], *proxy.info[INFO_ARGS])
-              proxy.origin = {INFO_TYPE => TYPE_PRIMITIVE, INFO_ORG => result}
+            if rcvr.origin && rcvr.origin.respond_to?(proxy.info[INFO_NAME])
+              args = []
+              if proxy.info[INFO_ARGS][0] == TYPE_ARRAY
+                proxy.info[INFO_ARGS][1].each { |t, v|
+                  if t == TYPE_OBJECT
+                    args << v.origin
+                  else
+                    args << v
+                  end
+                }
+              end
+              proxy.origin = rcvr.origin.send(proxy.info[INFO_NAME], *args)
             else
               error = NoMethodError.new("undefined method `#{proxy.info[INFO_NAME]}'")
               # TODO on error clear stack???
