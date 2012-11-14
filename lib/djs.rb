@@ -448,7 +448,7 @@ module DJS
             # TODO
             p '###############################'
           when TYPE_ERROR
-            p "++++++++++ ERROR ++++++++++++++"
+            error = info[INFO_ORG]
           else
             proxy = stack[info[INFO_OID]]
             proxy.origin = info

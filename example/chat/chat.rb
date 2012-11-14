@@ -34,4 +34,4 @@ class ChatConnection < DJS::Connection
   end
 end
 
-DJS.start(ChatConnection)
+DJS.start(ChatConnection, {:host => '127.0.0.1', :port => 8080, :debug => false})
