@@ -1,6 +1,6 @@
-require '../../lib/djs'
+class ChatConnection
+  include Redom::Connection
 
-class ChatConnection < DJS::Connection
   def j(arg)
     jQuery(arg)
   end
@@ -10,7 +10,7 @@ class ChatConnection < DJS::Connection
     message = j("#message").attr('value')
     j("#message").attr('value', '').focus
     sync
-    DJS.connections.send_chat_msg("#{escape(nickname)}: #{escape(message)}")
+    connections.send_chat_msg("#{escape(nickname.origin)}: #{escape(message.origin)}")
   end
 
   def send_chat_msg(message)
@@ -19,11 +19,15 @@ class ChatConnection < DJS::Connection
 
   def on_open
     j("#status")[0].innerHTML = ''
-    j("#btn")[0].onclick = method(:receive_chat_msg)
+    j("#btn")[0].onclick = :receive_chat_msg
   end
 
   def on_error(error)
     p error
+  end
+
+  def on_close
+    puts 'closed'
   end
 
   def escape(str)
@@ -33,5 +37,3 @@ class ChatConnection < DJS::Connection
     str
   end
 end
-
-DJS.start(ChatConnection, {:host => '127.0.0.1', :port => 8080, :debug => false})

@@ -1,0 +1,48 @@
+<html>
+	<head>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta http-equiv="Content-Style-Type" content="text/css" />
+        <meta http-equiv="Content-Script-Type" content="text/javascript" />
+
+		<title>Othello</title>
+		<script type="text/javascript" src="../../lib/redom.js"></script>
+		<script type="text/javascript">
+			window.onload = function() {
+				Redom("ws://localhost:8080/websocket").open("OthelloConnection");
+			}
+		</script>
+		<style type="text/css">
+			table.tbl {
+				border: solid 0px black;
+				background-color: #000000;
+				border-collapse: collapse;
+			}
+
+			table.tbl tr {
+				height: 25px;
+				vertical-align: middle;
+			}
+
+			table.tbl td {
+				width: 25px;
+				text-align: center;
+				background-color: #f0f0f0;
+				border: solid 1px white;
+			}
+
+			table.tbl td:hover {
+				width: 25px;
+				text-align: center;
+				background-color: #d0d0d0;
+				border: solid 1px white;
+			}
+		</style>
+	</head>
+
+	<body style="text-align: center;">
+ 		<div id="msg">Othello</div>
+ 		<div id='board' align="center"></div>
+ 		<br>
+ 		<input type="button" id="start" value="START">
+	</body>
+</html>

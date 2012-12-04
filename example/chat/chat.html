@@ -1,11 +1,15 @@
 <html>
 	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+        <meta http-equiv="Content-Style-Type" content="text/css" />
+        <meta http-equiv="Content-Script-Type" content="text/javascript" />
+
 		<title>Chat</title>
-		<script type="text/javascript" src="../../lib/djs.js"></script>
-		<script type="text/javascript" src="jquery.js"></script>
+		<script type="text/javascript" src="../../lib/redom.js"></script>
+		<script type="text/javascript" src="../jquery.js"></script>
 		<script type="text/javascript">
 			window.onload = function() {
-				djs.start("ws://localhost:8080");
+				Redom("ws://localhost:8080/websocket").open("ChatConnection");
 			}
 		</script>
 	</head>
