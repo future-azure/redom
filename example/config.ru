@@ -1,5 +1,5 @@
 require 'socky/server'
-require '../lib/redom'
+require 'redom'
 require './chat/chat'
 require './othello/othello'
 
@@ -21,13 +21,14 @@ class RedomApp < Rack::WebSocket::Application
   end
 end
 
+Redom.start
+
 map '/websocket' do
   run RedomApp.new
 end
 
-run Rack::Directory.new(File.expand_path('..'))
+map '/redom.js' do
+  run Proc.new {|env| [200, {"Content-Type" => "text/javascript"}, [Redom.runtime]]}
+end
 
-Redom.start({
-  :websocket_server => false,
-  :log_level => 'info'
-})
+run Rack::Directory.new(File.expand_path('.'))

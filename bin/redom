@@ -1,0 +1,83 @@
+#! /usr/bin/env ruby
+
+require 'em-websocket'
+require 'optparse'
+require 'redom'
+
+options = {
+  :host => '0.0.0.0',
+  :port => 8080
+}
+
+parser = OptionParser.new { |opts|
+  opts.banner = "Usage: redom [options] app"
+
+  opts.separator ""
+  opts.separator "Server options:"
+
+  opts.on("-h", "--host HOST",             "bind to HOST address (default: #{options[:host]})") { |host| options[:host] = host }
+  opts.on("-p", "--port PORT",             "use PORT (default: #{options[:port]})") { |port| options[:port] = port.to_i }
+
+  opts.separator ""
+  opts.separator "Secure options:"
+
+  opts.on(      "--secure",                "accept secure wss:// connections") { options[:secure] = true }
+  opts.on(      "--private-key-file PATH", "path to private key") { |path|
+    if tls = options[:tls_options]
+      tls[:private_key_file] = path
+    else
+      options[:tls_options] = { :private_key_file => path }
+    end
+  }
+  opts.on(      "--cert-chain-file PATH",  "path to certificate") { |path|
+    if tls = options[:tls_options]
+      tls[:cert_chain_file] = path
+    else
+      options[:tls_options] = { :cert_chain_file => path }
+    end
+  }
+  opts.on(      "--secure-proxy",          "running behind an SSL/Terminator") { options[:secure_proxy] = true }
+  
+  opts.separator ""
+  opts.separator "Common options:"
+
+  opts.on(      "--worker NUM",            "number of worker thread (default: 5)") { |num| options[:worker] = num.to_i }
+  opts.on(      "--buff-size NUM",         "size of packed RPC message before sync") { |num| options[:buff_size] = num.to_i }
+  opts.on(      "--log FILE",              "path to log (default: STDOUT)") { |path| options[:log] = path }
+  opts.on(      "--log-level fatal|error|warn|info|debug", "log level (default: error)") { |lv| options[:log_level] = lv }
+  opts.on_tail( "--help",                  "show this message") { puts opts; exit }
+  opts.on_tail( "--version",               "show version") { puts Redom::VERSION; exit }
+}
+
+parser.parse ARGV
+
+
+if ARGV.length > 0
+#$LOAD_PATH << pwd unless $LOAD_PATH.include?(pwd)
+  require Dir.pwd + '/' + ARGV[-1]
+else
+  puts 'No Redom app file specified.'
+  exit
+end
+
+Redom.start options
+
+EventMachine.run do
+  EventMachine::WebSocket.start(options) do |ws|
+    ws.onopen {
+      Redom.on_open ws
+    }
+
+    ws.onmessage { |msg|
+      Redom.on_message ws, msg
+    }
+
+    ws.onclose {
+      Redom.on_close ws
+    }
+
+    ws.onerror { |error|
+       Redom.on_error ws, error
+    }
+  end
+end
