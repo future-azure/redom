@@ -39,7 +39,7 @@ module Redom
       end
 
       if result
-        @conn._send [_id, result].to_json
+        result[0]._send [_id, result[1]].to_json
       else
         _dispatcher.delete_task _id
       end

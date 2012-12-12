@@ -56,7 +56,7 @@ module Redom
         msg << v._info
       }
 
-      rsp = Fiber.yield(msg)
+      rsp = Fiber.yield([self, msg])
 
       error = nil
       while result = rsp.shift
