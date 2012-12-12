@@ -42,7 +42,7 @@ parser = OptionParser.new { |opts|
   opts.separator "Common options:"
 
   opts.on(      "--worker NUM",            "number of worker thread (default: 5)") { |num| options[:worker] = num.to_i }
-  opts.on(      "--buff-size NUM",         "size of packed RPC message before sync") { |num| options[:buff_size] = num.to_i }
+  opts.on(      "--buff-size NUM",         "size of packed RPC message before sync (default: 200)") { |num| options[:buff_size] = num.to_i }
   opts.on(      "--log FILE",              "path to log (default: STDOUT)") { |path| options[:log] = path }
   opts.on(      "--log-level fatal|error|warn|info|debug", "log level (default: error)") { |lv| options[:log_level] = lv }
   opts.on_tail( "--help",                  "show this message") { puts opts; exit }

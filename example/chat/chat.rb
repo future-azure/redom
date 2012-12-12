@@ -9,10 +9,10 @@ class ChatConnection
     nickname = j("#nickname").attr('value')
     message = j("#message").attr('value')
     j("#message").attr('value', '').focus
-    sync
+    sync{}
     connections.each { |conn|
-      conn.send_chat_msg("#{escape(nickname.origin)}: #{escape(message.origin)}")
-      sync conn
+      conn.send_chat_msg("#{escape(nickname)}: #{escape(message)}")
+      sync(conn){}
     }
   end
 

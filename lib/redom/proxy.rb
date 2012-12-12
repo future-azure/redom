@@ -25,7 +25,7 @@ module Redom
 
     def sync
       unless @solved
-        @conn.sync
+        @conn.sync{}
       end
       @origin
     end

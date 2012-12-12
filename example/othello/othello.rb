@@ -54,7 +54,7 @@ class OthelloConnection
   def on_close
     if @opponent
       @opponent.player_disconnected
-      sync(@opponent)
+      sync(@opponent){}
     end
   end
 
@@ -81,7 +81,7 @@ class OthelloConnection
         conn.opponent = self
         game_start(TYPE_WHITE)
         conn.game_start(TYPE_BLACK)
-        sync(conn)
+        sync(conn){}
         break
       end
     }
@@ -111,7 +111,7 @@ class OthelloConnection
     id = ele.id.sync
     check_win(id[0].to_i, id[1].to_i)
   end
-  
+
   def check_win(py, px)
     return unless @board[py][px] == 0
     valid = false
@@ -128,7 +128,7 @@ class OthelloConnection
             @turn = -@type
             @msg.innerHTML = "Opponent's turn. #{PIECES[-@type]}"
             @opponent.update_board(@board)
-            sync(@opponent)
+            sync(@opponent){}
             return
           end
         }
@@ -138,7 +138,7 @@ class OthelloConnection
     if @left > 0
       @msg.innerHTML = 'You win!'
       @opponent.update_board(@board, [1, -1])
-      sync(@opponent)
+      sync(@opponent){}
     else
       count = 0
       loop { |y, x|
@@ -150,7 +150,7 @@ class OthelloConnection
         @msg.innerHTML = "Draw game!"
       end
       @opponent.update_board(@board, [count, 64 - count])
-      sync(@opponent)
+      sync(@opponent){}
     end
     @turn = 0
     @opponent = nil
@@ -189,7 +189,7 @@ class OthelloConnection
     end
     return false
   end
-  
+
   def update_board(board, score = nil)
     @left -= 1
     loop { |y, x|
@@ -215,7 +215,7 @@ class OthelloConnection
       @msg.innerHTML = "Your turn. #{PIECES[@type]}"
     end
   end
-  
+
   def player_disconnected
     @msg.innerHTML = "Player disconnected!"
     @turn = 0
@@ -223,7 +223,7 @@ class OthelloConnection
     @started = false
     document.getElementById('start').disabled = false
   end
-  
+
   def loop(&blk)
     0.upto(7).each { |y|
       0.upto(7).each { |x|

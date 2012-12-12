@@ -40,10 +40,10 @@ module Redom
       end
     end
 
-    def sync(obj = nil)
+    def sync(obj = nil, &blck)
       obj = _fid if obj == self
       if Connection === obj
-        _dispatcher.run_task(obj, :sync, [_fid], nil)
+        _dispatcher.run_task(obj, :sync, [_fid], blck)
         return
       end
 
@@ -74,6 +74,16 @@ module Redom
           proxy._origin result[1]
         end
       end
+
+      vars = (eval('local_variables', blck.binding) - [:_]).map { |v|
+        "#{v} = map[#{v}.__id__].origin if Redom::Proxy === #{v} && map.key?(#{v}.__id__)"
+      }.join("\n")
+      set_var = eval %Q{
+        lambda { |map|
+          #{vars}
+        }
+      }, blck.binding
+      set_var.call stack
 
       stack.clear
 

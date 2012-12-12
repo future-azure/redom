@@ -32,7 +32,7 @@ module Redom
             _logger.error "Method '#{@info[T_INFO_METHOD_NAME]}' is not defined in class '#{@conn.class}'."
             @conn.method(:on_error).call("No such method '#{@info[T_INFO_METHOD_NAME]}'.")
           end
-          @conn.sync
+          @conn.sync{}
           nil
         end
         result = @fiber.resume
