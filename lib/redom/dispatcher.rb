@@ -18,7 +18,7 @@ module Redom
       @pool.stop
     end
 
-    def run_task(conn, name, args, blck)
+    def run_task(conn, name, args = [], blck = nil)
       task = Task.new(conn, @pool.worker, [name, args, blck])
       @tasks[task._id] = task
       task.run
@@ -36,9 +36,10 @@ module Redom
         if cls = @conn_cls[req[IDX_CONNECTION_CLASS]]
           conn = cls.new._init(ws, @opts)
           @conns[ws.__id__] = conn
-          task = Task.new(conn, @pool.worker, [:on_open, []])
-          @tasks[task._id] = task
-          task.run
+          run_task(conn, :on_open)
+          # task = Task.new(conn, @pool.worker, [:on_open, []])
+          # @tasks[task._id] = task
+          # task.run
         else
           _logger.error "Undefined Redom::Connection class '#{req[IDX_CONNECTION_CLASS]}'."
         end
@@ -55,9 +56,10 @@ module Redom
             end
             arg
           }
-          task = Task.new(conn, @pool.worker, req[IDX_METHOD_NAME..-1])
-          @tasks[task._id] = task
-          task.run
+          run_task(conn, req[IDX_METHOD_NAME], req[IDX_ARGUMENTS])
+          # task = Task.new(conn, @pool.worker, req[IDX_METHOD_NAME..-1])
+          # @tasks[task._id] = task
+          # task.run
         else
           _logger.error "Connection missing. ID='#{ws.__id__}'"
         end
@@ -75,9 +77,10 @@ module Redom
     def on_close(ws)
       _logger.debug "Connection closed. ID='#{ws.__id__}'"
       if conn = @conns[ws.__id__]
-        task = Task.new(conn, @pool.worker, [:on_close, []])
-        @tasks[task._id] = task
-        task.run
+        run_task(conn, :on_close)
+        # task = Task.new(conn, @pool.worker, [:on_close, []])
+        # @tasks[task._id] = task
+        # task.run
         @conns.delete ws.__id__
       end
     end

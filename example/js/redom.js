@@ -15,9 +15,88 @@
   P_INFO_NAME = 2,
   P_INFO_ARGS = 3;
 
+  if (window.Opal) {
+    Object.prototype.$djsCall = function(name) {
+        if (name == '') {
+          return (function(obj) {
+            return function(key) {
+              return obj[key];
+             };
+        })(this);
+      }
+  
+      if (name == '$method') {
+        return function(methodName) {
+          if (Opal.top['$' + methodName]) {
+            return Opal.top['$' + methodName];
+          } else {
+            return function(e) {
+              window.djs.invoke(methodName, [e]);
+            };
+          }
+        };
+      }
+  
+      if (Opal.top[name]) {
+        if (typeof Opal.top[name] == 'function') {
+          return function() {
+            return Opal.top[name].apply(Opal.top, arguments);
+          };
+        } else {
+          return function() {
+            return Opal.top[name];
+          };
+        }
+      }
+      if (name[0] == "$" && this[name] == null) {
+        name = name.substring(1);
+      };
+      
+      if (this[name] != null) {
+        if (typeof this[name] == 'function') {
+          return (function(obj) {
+            return function() {
+              return obj[name].apply(obj, arguments);
+            };
+          })(this);
+        } else {
+          return (function(obj) {
+            return function() {
+              return obj[name];
+            };
+          })(this);
+        }
+      } else if (window[name]) {
+        if (typeof window[name] == 'function') {
+          return function() {
+            return window[name].apply(window, arguments);
+          };
+        } else {
+          return function() {
+            return window[name];
+          };
+        }
+      }
+  
+      return function() {
+        return null;
+      };
+    };
+    Object.prototype.$djsAssign = function(name) {
+      return (function(obj) {
+        return function(value) {
+          return obj[name] = value;
+        };
+      })(this);
+    };
+    Opal.top.$window = window;
+    Opal.top.$document = window.document;
+    Opal.top.$navigator = window.navigator;
+    Opal.top.$location = window.location;
+  }
+
   var Redom = function(server) {
-    var ws = new WebSocket(server);
-      conn = "Connection",
+    var ws = new WebSocket(server),
       refs = {
         seq: 0,
         hash: {},
@@ -50,8 +129,7 @@
     // Initialize WebSocket event handlers
     function open(connectionClassName) {
       ws.onopen = function() {
-        conn = connectionClassName;
-        ws.send(serialize([REQ_HANDSHAKE, conn]));
+        ws.send(serialize([REQ_HANDSHAKE, connectionClassName]));
         console.log("WebSocket opened.");
       };
       ws.onclose = function() {
@@ -224,10 +302,6 @@
     return {
       getServer: function() {
         return server;
-      },
-
-      getConnection: function() {
-        return conn;
       },
 
       open: function(connectionClassName) {

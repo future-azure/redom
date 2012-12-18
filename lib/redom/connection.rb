@@ -2,6 +2,23 @@ module Redom
   module Connection
     include Utils
 
+    class Sender
+      def initialize(conn, async = false)
+        @conn = conn
+        @async = async
+      end
+
+      def method_missing(name, *args, &blck)
+        if @async
+          @conn._dispatcher.run_task(@conn, name, args, blck)
+        else
+          result = @conn.send(name, *args, &blck)
+          @conn.sync{}
+          result
+        end
+      end
+    end
+
     # Default event handlers
     def on_open; end
     def on_close; end
@@ -28,6 +45,8 @@ module Redom
       @ws = ws
       @proxies = Hash.new
       @buff_size = opts[:buff_size]
+      @sync = Sender.new(self, false)
+      @async = Sender.new(self, true)
       self
     end
 
@@ -40,14 +59,10 @@ module Redom
       end
     end
 
-    def sync(obj = nil, &blck)
-      obj = _fid if obj == self
-      if Connection === obj
-        _dispatcher.run_task(obj, :sync, [_fid], blck)
-        return
-      end
+    def sync(&blck)
+      return @sync unless blck
 
-      fid = obj ? obj : _fid
+      fid = _fid
       stack = @proxies[fid]
       return if !stack || stack.empty?
 
@@ -88,6 +103,16 @@ module Redom
       stack.clear
 
       on_error(error) if error
+    end
+
+    def async(block = nil, &blck)
+      return @async unless block || blck
+
+      if block
+        block.call
+      else
+        _dispatcher.run_task(self, :async, blck)
+      end
     end
 
     def _cid

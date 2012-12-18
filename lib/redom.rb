@@ -5,7 +5,7 @@ require 'thread'
 
 $LOAD_PATH << File.dirname(__FILE__) unless $LOAD_PATH.include?(File.dirname(__FILE__))
 %w[
-  utils connection dispatcher proxy task worker thread_pool runtime version
+  utils connection dispatcher proxy task worker thread_pool runtime version parser
 ].each { |file|
   require "redom/#{file}"
 }
@@ -89,6 +89,10 @@ module Redom
 
     def on_error(ws, err)
       @@dispatcher.on_error(ws, err)
+    end
+
+    def parse(str, file='(file)')
+      Parser.new.parse str, file
     end
   end
 end

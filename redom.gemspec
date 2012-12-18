@@ -17,4 +17,5 @@ Gem::Specification.new do |s|
   s.executables   = ['redom']
 
   s.add_dependency 'em-websocket', '>= 0.3.5'
+  s.add_dependency 'opal', '>= 0.3.27'
 end
