@@ -35,16 +35,13 @@ module Redom
       when REQ_HANDSHAKE
         if cls = @conn_cls[req[IDX_CONNECTION_CLASS]]
           conn = cls.new._init(ws, @opts)
-          @conns[ws.__id__] = conn
-          run_task(conn, :on_open)
-          # task = Task.new(conn, @pool.worker, [:on_open, []])
-          # @tasks[task._id] = task
-          # task.run
+          @conns["#{ws.__id__}@#{conn.__id__}"] = conn
+          run_task(conn, :_on_open)
         else
           _logger.error "Undefined Redom::Connection class '#{req[IDX_CONNECTION_CLASS]}'."
         end
       when REQ_METHOD_INVOCATION
-        if conn = @conns[ws.__id__]
+        if conn = @conns[req[IDX_CONNECTION_ID]]
           req[IDX_ARGUMENTS].map! { |arg|
             if Array === arg
               case arg[0]
@@ -57,11 +54,8 @@ module Redom
             arg
           }
           run_task(conn, req[IDX_METHOD_NAME], req[IDX_ARGUMENTS])
-          # task = Task.new(conn, @pool.worker, req[IDX_METHOD_NAME..-1])
-          # @tasks[task._id] = task
-          # task.run
         else
-          _logger.error "Connection missing. ID='#{ws.__id__}'"
+          _logger.error "Connection missing. ID='#{req[IDX_CONNECTION_ID]}'"
         end
       when REQ_PROXY_RESULT
         if task = @tasks[req[IDX_TASK_ID]]
@@ -78,9 +72,6 @@ module Redom
       _logger.debug "Connection closed. ID='#{ws.__id__}'"
       if conn = @conns[ws.__id__]
         run_task(conn, :on_close)
-        # task = Task.new(conn, @pool.worker, [:on_close, []])
-        # @tasks[task._id] = task
-        # task.run
         @conns.delete ws.__id__
       end
     end

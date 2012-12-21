@@ -56,9 +56,9 @@ module Redom
         }
         arg
       when Method
-        [TYPE_METHOD, arg.name]
+        [TYPE_METHOD, @conn._cid, arg.name]
       when Symbol
-        [TYPE_METHOD, arg.to_s]
+        [TYPE_METHOD, @conn._cid, arg.to_s]
       else
         arg
       end

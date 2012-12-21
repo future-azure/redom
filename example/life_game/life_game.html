@@ -1,0 +1,32 @@
+<html>
+	<head>
+		<title>Life Game</title>
+		<script type="text/javascript" src="../js/jquery-1.8.3.js"></script>
+		<script type="text/javascript" src="../js/opal.js"></script>
+		<script type="text/javascript" src="../js/redom.js"></script>
+		<script type="text/javascript">
+			window.onload = function() {
+				Redom("ws://localhost:8080/websocket").open("LifeGameConnection");
+			}
+		</script>
+		<style type="text/css">
+			#board {
+				border: 1px solid black;
+				border-collapse: collapse;
+			}
+			
+			#board td {
+				width: 10px;
+				height: 10px;
+				border: 1px solid black;
+				text-align: center;
+				vertical-align: middle;
+			}
+		</style>
+	</head>
+
+	<body>
+		Generation: <input type="text" id="counter"/>
+		<div id="main"></div>
+	</body>
+</html>

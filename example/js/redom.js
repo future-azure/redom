@@ -15,28 +15,26 @@
   P_INFO_NAME = 2,
   P_INFO_ARGS = 3;
 
+  var connections = {};
+
   if (window.Opal) {
+  	Opal.$method = function(cid, name) {
+  	  if (Opal.top['$' + name]) {
+        return Opal.top['$' + name];
+      } else {
+        return connections[cid](name);
+      }
+  	}
+
     Object.prototype.$djsCall = function(name) {
-        if (name == '') {
-          return (function(obj) {
-            return function(key) {
-              return obj[key];
-             };
+      if (name == '') {
+        return (function(obj) {
+          return function(key) {
+            return obj[key];
+          };
         })(this);
       }
-  
-      if (name == '$method') {
-        return function(methodName) {
-          if (Opal.top['$' + methodName]) {
-            return Opal.top['$' + methodName];
-          } else {
-            return function(e) {
-              window.djs.invoke(methodName, [e]);
-            };
-          }
-        };
-      }
-  
+
       if (Opal.top[name]) {
         if (typeof Opal.top[name] == 'function') {
           return function() {
@@ -161,7 +159,7 @@
     // Close this WebSocket connection
     function close() {
       ws.close();
-    }
+    };
 
     // Serialize JavaScript object into message
     function serialize(data) {
@@ -186,7 +184,7 @@
           return refs.get(args[1]);
           break;
         case TYPE_METHOD:
-          return (function(name) {
+          return (function(cid, name) {
             if (window[name] && typeof(window[name]) == 'function') {
               return function() {
                 window[name];
@@ -205,10 +203,10 @@
                       break;
                   }
                 }
-                ws.send(serialize([REQ_METHOD_INVOCATION, name, args]));
+                ws.send(serialize([REQ_METHOD_INVOCATION, cid, name, args]));
               }
             }
-          })(args[1]);
+          })(args[1], args[2]);
           break;
         }
       } else {
@@ -246,9 +244,19 @@
             };
           }
         } else {
-          rsps.push([oid, TYPE_ERROR, "no such object. ID='" + proxy[P_INFO_RCVR] + "'."]);
-          ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
-          return;
+          if (name) {
+            rsps.push([oid, TYPE_ERROR, "no such object. ID='" + proxy[P_INFO_RCVR] + "'."]);
+            ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
+            return;
+          } else {
+          	connections[args] = (function(ws, cid) {
+              return function(name) {
+              	return function(e) {
+              		ws.send(serialize([REQ_METHOD_INVOCATION, cid, name, [[TYPE_PROXY, refs.put(e)]]]));
+              	};
+              };
+          	})(ws, args);
+          }
         }
       }
       ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
@@ -274,7 +282,7 @@
           return TYPE_METHOD;
       }
       return TYPE_UNDEFINED;
-    }
+    };
 
     // Method invocation
     function execute(rcvr, name, args) {

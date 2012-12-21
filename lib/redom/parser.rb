@@ -2,6 +2,12 @@ require 'opal'
 
 module Redom
   class Parser < Opal::Parser
+    include Utils
+
+    def initialize(conn)
+      @conn = conn
+    end
+
     # s(:lit, 1)
     # s(:lit, :foo)
     def process_lit(sexp, level)
@@ -10,7 +16,7 @@ module Redom
       when Numeric
         level == :recv ? "(#{val.inspect})" : val.inspect
       when Symbol
-        val.to_s.inspect + "_____"
+        "Opal.$method(#{@conn._cid.inspect}, #{val.to_s.inspect})"
       when Regexp
         val == // ? /^/.inspect : val.inspect
       when Range
@@ -42,8 +48,6 @@ module Redom
       elsif /\=|\+|\-|\*|\/|\!|\?|\<|\>|\&|\||\^|\%|\~|\[/ =~ mid.to_s
         "['$#{mid}']"
       else
-# djs
-        # '.$' + mid
         if djs_call
           ".$djsCall('$#{mid}')"
         else
@@ -53,7 +57,6 @@ module Redom
     end
 
     def js_def(recvr, mid, args, stmts, line, end_line)
-# djs
       jsid = mid_to_jsid(mid.to_s, false)
 
       if recvr
@@ -159,7 +162,6 @@ module Redom
 
     # s(:const, :const)
     def process_const(sexp, level)
-      # "__scope.#{sexp.shift}"
       "__scope.$djsCall('#{sexp.shift}')()"
     end
 
@@ -211,8 +213,6 @@ module Redom
       args = process arglist, :expr
 
       result = if block
-        # dispatch = "(%s = %s, %s%s._p = %s, %s%s" %
-          # [tmprecv, recv_code, tmprecv, mid, block, tmprecv, mid]
         dispatch = "(%s = %s, %s%s._p = %s, %s%s" %
           [tmprecv, recv_code, tmprecv, mid_to_jsid(meth.to_s, false), block, tmprecv, mid]
 

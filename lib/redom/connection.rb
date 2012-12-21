@@ -11,6 +11,7 @@ module Redom
       def method_missing(name, *args, &blck)
         if @async
           @conn._dispatcher.run_task(@conn, name, args, blck)
+          nil
         else
           result = @conn.send(name, *args, &blck)
           @conn.sync{}
@@ -103,6 +104,8 @@ module Redom
       stack.clear
 
       on_error(error) if error
+
+      nil
     end
 
     def async(block = nil, &blck)
@@ -113,10 +116,21 @@ module Redom
       else
         _dispatcher.run_task(self, :async, blck)
       end
+
+      nil
+    end
+
+    def parse(str, file='(file)')
+      Parser.new(self).parse str, file
+    end
+
+    def _on_open
+      _bulk Proxy.new(self, [nil, nil, nil, _cid])
+      on_open
     end
 
     def _cid
-      @ws.__id__
+      "#{@ws.__id__}@#{__id__}"
     end
 
     def _fid

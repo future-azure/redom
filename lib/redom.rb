@@ -26,8 +26,9 @@ module Redom
   # REQ_HANDSHAKE
   IDX_CONNECTION_CLASS = 1
   # REQ_METHOD_INVOCATION
-  IDX_METHOD_NAME      = 1
-  IDX_ARGUMENTS        = 2
+  IDX_CONNECTION_ID    = 1
+  IDX_METHOD_NAME      = 2
+  IDX_ARGUMENTS        = 3
   # REQ_PROXY_RESULT
   IDX_TASK_ID          = 1
   IDX_PROXY_RESULT     = 2
@@ -89,10 +90,6 @@ module Redom
 
     def on_error(ws, err)
       @@dispatcher.on_error(ws, err)
-    end
-
-    def parse(str, file='(file)')
-      Parser.new.parse str, file
     end
   end
 end
