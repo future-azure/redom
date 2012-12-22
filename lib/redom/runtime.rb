@@ -8,7 +8,7 @@ module Redom
   TYPE_PROXY     = 1,
   TYPE_ARRAY     = 2,
   TYPE_ERROR     = 3,
-  TYPE_METHOD    = 4
+  TYPE_METHOD    = 4,
 
   REQ_HANDSHAKE         = 0,
   REQ_METHOD_INVOCATION = 1,
@@ -19,26 +19,24 @@ module Redom
   P_INFO_NAME = 2,
   P_INFO_ARGS = 3;
 
-  if (window.Opal) {
-    Object.prototype.$djsCall = function(name) {
-        if (name == '') {
-          return (function(obj) {
-            return function(key) {
-              return obj[key];
-             };
-        })(this);
-      }
+  var connections = {};
 
-      if (name == '$method') {
-        return function(methodName) {
-          if (Opal.top['$' + methodName]) {
-            return Opal.top['$' + methodName];
-          } else {
-            return function(e) {
-              window.djs.invoke(methodName, [e]);
-            };
-          }
-        };
+  if (window.Opal) {
+    Opal.$method = function(cid, name) {
+      if (Opal.top['$' + name]) {
+        return Opal.top['$' + name];
+      } else {
+        return connections[cid](name);
+      }
+    }
+
+    Object.prototype.$djsCall = function(name) {
+      if (name == '') {
+        return (function(obj) {
+          return function(key) {
+            return obj[key];
+          };
+        })(this);
       }
 
       if (Opal.top[name]) {
@@ -55,7 +53,7 @@ module Redom
       if (name[0] == "$" && this[name] == null) {
         name = name.substring(1);
       };
-
+      
       if (this[name] != null) {
         if (typeof this[name] == 'function') {
           return (function(obj) {
@@ -81,7 +79,7 @@ module Redom
           };
         }
       }
-
+  
       return function() {
         return null;
       };
@@ -97,6 +95,7 @@ module Redom
     Opal.top.$document = window.document;
     Opal.top.$navigator = window.navigator;
     Opal.top.$location = window.location;
+    Opal.top.$history = window.history;
   }
 
   var Redom = function(server) {
@@ -165,7 +164,7 @@ module Redom
     // Close this WebSocket connection
     function close() {
       ws.close();
-    }
+    };
 
     // Serialize JavaScript object into message
     function serialize(data) {
@@ -190,7 +189,7 @@ module Redom
           return refs.get(args[1]);
           break;
         case TYPE_METHOD:
-          return (function(name) {
+          return (function(cid, name) {
             if (window[name] && typeof(window[name]) == 'function') {
               return function() {
                 window[name];
@@ -209,10 +208,10 @@ module Redom
                       break;
                   }
                 }
-                ws.send(serialize([REQ_METHOD_INVOCATION, name, args]));
+                ws.send(serialize([REQ_METHOD_INVOCATION, cid, name, args]));
               }
             }
-          })(args[1]);
+          })(args[1], args[2]);
           break;
         }
       } else {
@@ -233,7 +232,7 @@ module Redom
 
         if (rcvr) {
           result = execute(rcvr, name, args);
-          if (result == undefined) {
+          if (typeof result == "undefined") {
             rsps.push([oid, [TYPE_UNDEFINED]]);
             ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
             return;
@@ -250,9 +249,19 @@ module Redom
             };
           }
         } else {
-          rsps.push([oid, TYPE_ERROR, "no such object. ID='" + proxy[P_INFO_RCVR] + "'."]);
-          ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
-          return;
+          if (name) {
+            rsps.push([oid, TYPE_ERROR, "no such object. ID='" + proxy[P_INFO_RCVR] + "'."]);
+            ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
+            return;
+          } else {
+            connections[args] = (function(ws, cid) {
+              return function(name) {
+                return function(e) {
+                  ws.send(serialize([REQ_METHOD_INVOCATION, cid, name, [[TYPE_PROXY, refs.put(e)]]]));
+                };
+              };
+            })(ws, args);
+          }
         }
       }
       ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
@@ -278,7 +287,7 @@ module Redom
           return TYPE_METHOD;
       }
       return TYPE_UNDEFINED;
-    }
+    };
 
     // Method invocation
     function execute(rcvr, name, args) {
@@ -297,6 +306,7 @@ module Redom
           result = rcvr[name];
           if (typeof result == "function") {
             result = result.apply(rcvr, args);
+            result = typeof result == "undefined" ? null : result;
           }
         }
       }

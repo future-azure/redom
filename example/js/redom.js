@@ -4,7 +4,7 @@
   TYPE_PROXY     = 1,
   TYPE_ARRAY     = 2,
   TYPE_ERROR     = 3,
-  TYPE_METHOD    = 4
+  TYPE_METHOD    = 4,
 
   REQ_HANDSHAKE         = 0,
   REQ_METHOD_INVOCATION = 1,
@@ -91,6 +91,7 @@
     Opal.top.$document = window.document;
     Opal.top.$navigator = window.navigator;
     Opal.top.$location = window.location;
+    Opal.top.$history = window.history;
   }
 
   var Redom = function(server) {
@@ -227,7 +228,7 @@
 
         if (rcvr) {
           result = execute(rcvr, name, args);
-          if (result == undefined) {
+          if (typeof result == "undefined") {
             rsps.push([oid, [TYPE_UNDEFINED]]);
             ws.send(serialize([REQ_PROXY_RESULT, tid, rsps]));
             return;
@@ -301,6 +302,7 @@
           result = rcvr[name];
           if (typeof result == "function") {
             result = result.apply(rcvr, args);
+            result = typeof result == "undefined" ? null : result;
           }
         }
       }
