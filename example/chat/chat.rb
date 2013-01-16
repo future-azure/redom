@@ -11,18 +11,12 @@ class ChatConnection
     j("#message").attr('value', '').focus
     sync{}
     connections.each { |conn|
-      conn.sync.send_chat_msg("#{escape(nickname)}: #{escape(message)}")
-      # conn.send_chat_msg("#{escape(nickname)}: #{escape(message)}")
-      # conn.async.send_chat_msg("#{escape(nickname)}: #{escape(message)}")
-      # async {
-        # conn.send_chat_msg("#{escape(nickname)}: #{escape(message)}")
-      # } 
+      conn.async.send_chat_msg("#{escape(nickname)}: #{escape(message)}")
     }
   end
 
   def send_chat_msg(message)
     j("#chats").prepend j("<div>[#{Time.now.strftime('%H:%M:%S')}] #{message}</div>")
-    # sync{}
   end
 
   def on_open
